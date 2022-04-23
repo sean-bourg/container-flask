@@ -1,0 +1,86 @@
+# Docker compose file to setup multi-tiered environment for example.
+# construct instance of a frontend proxy, database, and flask server.
+version: "3.8"
+
+# Define subnets for this environment.
+# Proxy will sit on the public facing network and route traffic to the proxy
+# private endpoints.
+networks:
+  network-public:
+    name: cf-network-public
+    driver: bridge
+    internal: false
+
+  network-private:
+    name: cf-network-private
+    driver: bridge
+    internal: true
+
+# Define services for this environment.
+services:
+
+  # add Proxy server to the public facing network listening on both port 80 and 443.
+  proxy:
+    container_name: "${CONTAINER_NAME_PROXY:-cf-proxy}"
+    image: "${IMAGE_NAME_PROXY:-cf-proxy}"
+    build: ./docker/proxy
+    restart: always
+    networks:
+      - network-public
+      - network-private
+    ports:
+      - 80:80
+      - 443:443
+    depends_on:
+      - cdn
+      - site
+    links:
+      - cdn
+      - site
+
+  # add CDB server to the private subnet and listening on port 8081.
+  cdn:
+    container_name: "${CONTAINER_NAME_CDN:-cf-cdn}"
+    image: "${IMAGE_NAME_CDN:-cf-cdn}"
+    container_name: cf-cdn
+    build: ./docker/cdn
+    restart: always
+    volumes:
+      - ./cdn-www:/www/assets:ro
+    networks:
+      - network-private
+    ports:
+      - 80:80
+
+  # add site to the private subnet and listening on port 8080.
+  site:
+    container_name: "${CONTAINER_NAME_SITE:-cf-site}"
+    image: "${IMAGE_NAME_SITE:-cf-site}"
+    build: ./docker/site
+    restart: always
+    volumes:
+      - ./site:/site:ro
+    networks:
+      - network-private
+    ports:
+      - 8080:8080
+    depends_on:
+      - database
+    links:
+      - database
+
+  # add datbase to private subnet and listening on port 5432.
+  database:
+    container_name: "${CONTAINER_NAME_DATABASE:-cf-database}"
+    image: postgres:14.2-alpine3.15
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=ExampleSite
+    volumes:
+      - ./docker/database/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d:ro
+    networks: 
+      - network-private
+    ports:
+      - 5432:5432
