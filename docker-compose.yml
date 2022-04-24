@@ -23,7 +23,7 @@ services:
   proxy:
     container_name: "${CONTAINER_NAME_PROXY:-cf-proxy}"
     image: "${IMAGE_NAME_PROXY:-cf-proxy}"
-    build: ./docker/proxy
+    build: ./proxy
     restart: always
     networks:
       - network-public
@@ -33,33 +33,30 @@ services:
       - 443:443
     depends_on:
       - cdn
-      - site
+      - app
     links:
       - cdn
-      - site
+      - app
 
   # add CDB server to the private subnet and listening on port 8081.
   cdn:
     container_name: "${CONTAINER_NAME_CDN:-cf-cdn}"
-    image: "${IMAGE_NAME_CDN:-cf-cdn}"
-    container_name: cf-cdn
-    build: ./docker/cdn
+    image: "${CONTAINER_NAME_CDN:-cf-cdn}"
+    build: ./cdn
     restart: always
-    volumes:
-      - ./cdn-www:/www/assets:ro
     networks:
       - network-private
     ports:
       - 80:80
-
-  # add site to the private subnet and listening on port 8080.
-  site:
-    container_name: "${CONTAINER_NAME_SITE:-cf-site}"
-    image: "${IMAGE_NAME_SITE:-cf-site}"
-    build: ./docker/site
-    restart: always
     volumes:
-      - ./site:/site:ro
+      - ./cdn/www:/usr/share/nginx/html:ro
+
+  # add app to the private subnet and listening on port 8080.
+  app:
+    container_name: "${CONTAINER_NAME_APP:-cf-app}"
+    image: "${CONTAINER_NAME_APP:-cf-app}"
+    build: ./app
+    restart: always
     networks:
       - network-private
     ports:
@@ -68,19 +65,24 @@ services:
       - database
     links:
       - database
+    environment:
+      - FLASK_DATABASE__host=${CONTAINER_NAME_DATABASE:-cf-database}
+      - FLASK_DATABASE__user=${POSTGRES_USER:-postgres}
+      - FLASK_DATABASE__password=${POSTGRES_PASSWORD:-postgres}
+      - FLASK_DATABASE__database=${POSTGRES_DB:-ExampleApp}
+      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-secret-key}
+    volumes:
+      - ./app/server.py:/app/server.py:ro
 
   # add datbase to private subnet and listening on port 5432.
   database:
     container_name: "${CONTAINER_NAME_DATABASE:-cf-database}"
-    image: postgres:14.2-alpine3.15
+    image: "${CONTAINER_NAME_DATABASE:-cf-database}"
+    build: ./postgres
     restart: always
     environment:
       - POSTGRES_USER=${POSTGRES_USER:-postgres}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
-      - POSTGRES_DB=${POSTGRES_DB:-ExampleSite}
-    volumes:
-      - ./docker/database/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d:ro
+      - POSTGRES_DB=${POSTGRES_DB:-ExampleApp}
     networks: 
       - network-private
-    ports:
-      - 5432:5432
