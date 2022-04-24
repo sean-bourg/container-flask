@@ -6,6 +6,7 @@ WORKDIR /app
 
 # copy requirements file.
 COPY ./requirements.txt /tmp/requirements.txt
+COPY ./server.py /app/server.py
 
 # install the dependencies and packages in the requirements file
 RUN apk update && \

@@ -48,8 +48,6 @@ services:
       - network-private
     ports:
       - 80:80
-    volumes:
-      - ./cdn/www:/usr/share/nginx/html:ro
 
   # add app to the private subnet and listening on port 8080.
   app:
@@ -71,8 +69,6 @@ services:
       - FLASK_DATABASE__password=${POSTGRES_PASSWORD:-postgres}
       - FLASK_DATABASE__database=${POSTGRES_DB:-ExampleApp}
       - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-secret-key}
-    volumes:
-      - ./app/server.py:/app/server.py:ro
 
   # add datbase to private subnet and listening on port 5432.
   database:

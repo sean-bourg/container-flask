@@ -7,6 +7,7 @@ RUN apk update && apk upgrade;
 
 # copy of nginx config files.
 COPY conf.d  /etc/nginx/conf.d
+COPY ./www /usr/share/nginx/html
 
 # expose port 80 and start nginx.
 EXPOSE 80
