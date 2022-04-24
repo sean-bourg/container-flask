@@ -75,9 +75,9 @@ services:
     image: postgres:14.2-alpine3.15
     restart: always
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=ExampleSite
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-ExampleSite}
     volumes:
       - ./docker/database/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d:ro
     networks: 
