@@ -72,7 +72,7 @@ services:
       - FLASK_DATABASE__database=${POSTGRES_DB:-ExampleApp}
       - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-secret-key}
     volumes:
-      - ./app/server.py:/app/server.py:ro
+      - ./app/src:/app:ro
 
   # add datbase to private subnet and listening on port 5432.
   database:
